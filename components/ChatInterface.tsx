@@ -293,9 +293,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ subject, mode, onBack }) 
     }]);
 
     try {
+      // FIX: Do NOT add userMsg to the history passed to streamChatResponse.
+      // The Gemini chat client initializes with this history and then sends the userMsg as the new input.
+      // If we include userMsg in history, we get two user messages in a row (one in history, one in the new turn), which causes an error.
       const historyForApi = messages.filter(m => m.content.length > 0);
-      historyForApi.push(userMsg);
-
+      
       const stream = streamChatResponse(historyForApi, userMsg.content, subject.id, mode);
       
       for await (const chunk of stream) {

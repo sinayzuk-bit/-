@@ -71,7 +71,7 @@ export const streamChatResponse = async function* (
       model: modelId,
       config: {
         systemInstruction: getSystemInstruction(subject, mode),
-        thinkingConfig: { thinkingBudget: 1024 },
+        // Removed thinkingConfig to prevent potential error 500/0 if the feature is not fully supported or conflicts.
       },
       history: history.map(msg => ({
         role: msg.role,
