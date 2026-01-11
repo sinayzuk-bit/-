@@ -41,3 +41,9 @@ export interface PresentationData {
   slides: Slide[];
   coverImageBase64?: string;
 }
+
+export interface User {
+  name: string;
+  email: string;
+  password?: string; // stored for simulation only
+}

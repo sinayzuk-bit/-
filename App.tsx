@@ -1,8 +1,11 @@
-import React, { useState } from 'react';
-import { Subject, SubjectConfig, StudyMode } from './types';
+import React, { useState, useEffect } from 'react';
+import { Subject, SubjectConfig, StudyMode, User } from './types';
 import SubjectCard from './components/SubjectCard';
 import ChatInterface from './components/ChatInterface';
-import { BookOpen, ArrowRight, PenTool, GraduationCap, MessageCircle, MonitorPlay } from 'lucide-react';
+import AuthScreen from './components/AuthScreen';
+import ApiKeySelectionScreen from './components/ApiKeySelectionScreen';
+import { authService } from './services/auth';
+import { BookOpen, ArrowRight, PenTool, GraduationCap, MessageCircle, MonitorPlay, LogOut } from 'lucide-react';
 
 const SUBJECTS: SubjectConfig[] = [
   {
@@ -56,10 +59,55 @@ const SUBJECTS: SubjectConfig[] = [
 ];
 
 export default function App() {
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [hasApiKey, setHasApiKey] = useState<boolean>(false);
   const [selectedSubject, setSelectedSubject] = useState<SubjectConfig | null>(null);
   const [studyMode, setStudyMode] = useState<StudyMode | null>(null);
 
-  // 1. Chat View (Subject & Mode Selected)
+  // Check for existing session and API key on load
+  useEffect(() => {
+    const checkStatus = async () => {
+      const savedUser = authService.getCurrentUser();
+      if (savedUser) {
+        setCurrentUser(savedUser);
+      }
+
+      // Check for selected API key using platform method
+      // @ts-ignore
+      if (window.aistudio && typeof window.aistudio.hasSelectedApiKey === 'function') {
+        // @ts-ignore
+        const selected = await window.aistudio.hasSelectedApiKey();
+        setHasApiKey(selected);
+      } else {
+        // Fallback for environments where aistudio is not present
+        setHasApiKey(true);
+      }
+    };
+    checkStatus();
+  }, []);
+
+  const handleLogout = () => {
+    authService.logout();
+    setCurrentUser(null);
+    setSelectedSubject(null);
+    setStudyMode(null);
+  };
+
+  const handleKeySelected = () => {
+    setHasApiKey(true);
+  };
+
+  // 1. Auth Screen (If not logged in)
+  if (!currentUser) {
+    return <AuthScreen onLogin={setCurrentUser} />;
+  }
+
+  // 2. API Key Screen (If logged in but no key selected)
+  if (!hasApiKey) {
+    return <ApiKeySelectionScreen onKeySelected={handleKeySelected} />;
+  }
+
+  // 3. Chat View (Subject & Mode Selected)
   if (selectedSubject && studyMode) {
     return (
       <ChatInterface 
@@ -67,20 +115,18 @@ export default function App() {
         mode={studyMode}
         onBack={() => {
           setStudyMode(null);
-          // Optional: clear subject too if you want to go all the way back
-          // setSelectedSubject(null); 
         }} 
       />
     );
   }
 
-  // 2. Mode Selection View (Subject Selected, No Mode)
+  // 4. Mode Selection View (Subject Selected, No Mode)
   if (selectedSubject) {
     return (
-      <div className="min-h-screen bg-slate-50 flex flex-col p-6">
+      <div className="min-h-screen bg-slate-50 flex flex-col p-6 text-right" dir="rtl">
         <button 
           onClick={() => setSelectedSubject(null)}
-          className="self-start p-2 hover:bg-slate-200 rounded-full transition-colors text-slate-600 mb-6"
+          className="self-start p-2 hover:bg-slate-200 rounded-full transition-colors text-slate-600 mb-6 transform rotate-180"
         >
           <ArrowRight className="w-8 h-8" />
         </button>
@@ -104,7 +150,7 @@ export default function App() {
               <div className="w-12 h-12 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center group-hover:bg-indigo-600 group-hover:text-white transition-colors">
                 <PenTool className="w-6 h-6" />
               </div>
-              <div>
+              <div className="flex-1">
                 <h3 className="font-bold text-lg text-slate-800">עזרה בשיעורי בית</h3>
                 <p className="text-sm text-slate-500">נתקעת בשאלה? בוא נפתור ביחד.</p>
               </div>
@@ -117,7 +163,7 @@ export default function App() {
               <div className="w-12 h-12 rounded-full bg-pink-100 text-pink-600 flex items-center justify-center group-hover:bg-pink-600 group-hover:text-white transition-colors">
                 <GraduationCap className="w-6 h-6" />
               </div>
-              <div>
+              <div className="flex-1">
                 <h3 className="font-bold text-lg text-slate-800">בחן אותי</h3>
                 <p className="text-sm text-slate-500">מוכן למבחן? בוא נבדוק את הידע שלך.</p>
               </div>
@@ -130,7 +176,7 @@ export default function App() {
               <div className="w-12 h-12 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center group-hover:bg-orange-600 group-hover:text-white transition-colors">
                 <MonitorPlay className="w-6 h-6" />
               </div>
-              <div>
+              <div className="flex-1">
                 <h3 className="font-bold text-lg text-slate-800">בניית מצגת</h3>
                 <p className="text-sm text-slate-500">צריך עזרה בתכנון שקופיות?</p>
               </div>
@@ -143,7 +189,7 @@ export default function App() {
               <div className="w-12 h-12 rounded-full bg-cyan-100 text-cyan-600 flex items-center justify-center group-hover:bg-cyan-600 group-hover:text-white transition-colors">
                 <MessageCircle className="w-6 h-6" />
               </div>
-              <div>
+              <div className="flex-1">
                 <h3 className="font-bold text-lg text-slate-800">סתם ככה</h3>
                 <p className="text-sm text-slate-500">לדבר על הנושא בכיף, בלי לחץ.</p>
               </div>
@@ -154,12 +200,30 @@ export default function App() {
     );
   }
 
-  // 3. Subject Selection View (Default)
+  // 5. Subject Selection View (Default)
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center">
+    <div className="min-h-screen bg-background flex flex-col items-center text-right" dir="rtl">
       {/* Hero Section */}
       <header className="w-full bg-white pb-10 pt-8 px-6 rounded-b-[3rem] shadow-sm mb-8 text-center relative overflow-hidden">
         <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-400 via-pink-500 to-yellow-400"></div>
+        
+        {/* Settings/Key Button & Logout */}
+        <div className="absolute top-4 left-4 flex gap-2">
+            <button 
+               onClick={() => setHasApiKey(false)}
+               className="p-2 text-slate-400 hover:text-amber-500 hover:bg-amber-50 rounded-full transition-all"
+               title="החלף מפתח API"
+            >
+                <Key className="w-5 h-5" />
+            </button>
+            <button 
+               onClick={handleLogout}
+               className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-all"
+               title="התנתק"
+            >
+                <LogOut className="w-5 h-5" />
+            </button>
+        </div>
         
         <div className="max-w-4xl mx-auto relative z-10">
           <div className="flex justify-center mb-4">
@@ -168,10 +232,10 @@ export default function App() {
              </div>
           </div>
           <h1 className="text-4xl md:text-6xl font-display font-bold text-slate-800 mb-4 tracking-tight">
-            היי! אני <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">ספארקי</span>.
+            היי <span className="text-primary">{currentUser.name}</span>! 👋
           </h1>
           <p className="text-lg md:text-xl text-slate-500 max-w-2xl mx-auto font-medium">
-            המורה הפרטי שלך מבוסס AI. בחר נושא למטה ובוא נהפוך את שיעורי הבית לקלים (ואולי אפילו לכיפיים)! 🚀
+            אני ספארקי, המורה הפרטי שלך. בחר נושא למטה ובוא נהפוך את שיעורי הבית לקלים! 🚀
           </p>
         </div>
         
@@ -200,3 +264,6 @@ export default function App() {
     </div>
   );
 }
+
+// Add simple Key icon import missing from previous block
+import { Key } from 'lucide-react';

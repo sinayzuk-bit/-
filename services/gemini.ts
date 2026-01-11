@@ -63,6 +63,7 @@ export const streamChatResponse = async function* (
   subject: Subject,
   mode: StudyMode
 ) {
+  // Always create a new GoogleGenAI instance right before the call
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const modelId = 'gemini-3-pro-preview';
 
@@ -71,7 +72,6 @@ export const streamChatResponse = async function* (
       model: modelId,
       config: {
         systemInstruction: getSystemInstruction(subject, mode),
-        // Removed thinkingConfig to prevent potential error 500/0 if the feature is not fully supported or conflicts.
       },
       history: history.map(msg => ({
         role: msg.role,
@@ -86,13 +86,16 @@ export const streamChatResponse = async function* (
         yield chunk.text;
       }
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error("Gemini API Error:", error);
-    yield "אופס! המוח שלי קפא לשנייה. 🧊 אתה יכול לנסות לשאול שוב?";
+    if (error?.message?.includes("Requested entity was not found")) {
+        yield "נראה שיש בעיה במפתח ה-API שלך. נסה לחבר אותו מחדש דרך כפתור המפתח למעלה.";
+    } else {
+        yield "אופס! המוח שלי קפא לשנייה. 🧊 אתה יכול לנסות לשאול שוב?";
+    }
   }
 };
 
-// Function to generate the structure of the presentation (JSON)
 export const generatePresentationContent = async (topic: string, subject: Subject): Promise<Slide[]> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
@@ -121,7 +124,6 @@ export const generatePresentationContent = async (topic: string, subject: Subjec
       }
     });
     
-    // Parse the response
     const jsonStr = response.text;
     if (!jsonStr) throw new Error("No text returned");
     return JSON.parse(jsonStr) as Slide[];
@@ -132,20 +134,21 @@ export const generatePresentationContent = async (topic: string, subject: Subjec
   }
 };
 
-// Function to generate an image for a slide
 export const generateImage = async (prompt: string): Promise<string | undefined> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash-image',
+      // Using pro model for better image quality as requested for specific themes (e.g. WWII)
+      model: 'gemini-3-pro-image-preview',
       contents: {
         parts: [
-          { text: `High quality, educational illustration, 3D render style or digital art, suitable for a school presentation. Subject: ${prompt}. No text in image.` }
+          { text: `Educational school presentation illustration. Realistic and historic/accurate style if related to history. Theme: ${prompt}. No text in image.` }
         ]
       },
       config: {
          imageConfig: {
-           aspectRatio: "4:3"
+           aspectRatio: "4:3",
+           imageSize: "1K"
          }
       }
     });
@@ -158,6 +161,6 @@ export const generateImage = async (prompt: string): Promise<string | undefined>
     return undefined;
   } catch (error) {
     console.error("Image generation error:", error);
-    return undefined; // Fallback if image fails
+    return undefined;
   }
 };
