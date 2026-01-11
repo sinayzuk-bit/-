@@ -5,7 +5,16 @@ import ChatInterface from './components/ChatInterface';
 import AuthScreen from './components/AuthScreen';
 import ApiKeySelectionScreen from './components/ApiKeySelectionScreen';
 import { authService } from './services/auth';
-import { BookOpen, ArrowRight, PenTool, GraduationCap, MessageCircle, MonitorPlay, LogOut } from 'lucide-react';
+import { 
+  BookOpen, 
+  ArrowRight, 
+  PenTool, 
+  GraduationCap, 
+  MessageCircle, 
+  MonitorPlay, 
+  LogOut,
+  Key
+} from 'lucide-react';
 
 const SUBJECTS: SubjectConfig[] = [
   {
@@ -79,8 +88,15 @@ export default function App() {
         const selected = await window.aistudio.hasSelectedApiKey();
         setHasApiKey(selected);
       } else {
-        // Fallback for environments where aistudio is not present
-        setHasApiKey(true);
+        // If we're on a platform that doesn't support aistudio methods (like direct Vercel),
+        // we check if process.env.API_KEY is already there (set in Vercel secrets)
+        if (process.env.API_KEY && process.env.API_KEY !== 'undefined') {
+          setHasApiKey(true);
+        } else {
+          // If no key in env and no aistudio, we'll still show the key selection screen
+          // so the user can use the openSelectKey dialog if available.
+          setHasApiKey(false);
+        }
       }
     };
     checkStatus();
@@ -264,6 +280,3 @@ export default function App() {
     </div>
   );
 }
-
-// Add simple Key icon import missing from previous block
-import { Key } from 'lucide-react';

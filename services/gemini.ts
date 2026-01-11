@@ -63,7 +63,7 @@ export const streamChatResponse = async function* (
   subject: Subject,
   mode: StudyMode
 ) {
-  // Always create a new GoogleGenAI instance right before the call
+  // CRITICAL: Always create a fresh instance of GoogleGenAI inside the function to use latest process.env.API_KEY
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const modelId = 'gemini-3-pro-preview';
 
@@ -88,8 +88,8 @@ export const streamChatResponse = async function* (
     }
   } catch (error: any) {
     console.error("Gemini API Error:", error);
-    if (error?.message?.includes("Requested entity was not found")) {
-        yield "נראה שיש בעיה במפתח ה-API שלך. נסה לחבר אותו מחדש דרך כפתור המפתח למעלה.";
+    if (error?.message?.includes("Requested entity was not found") || error?.message?.includes("API key not valid")) {
+        yield "נראה שיש בעיה במפתח ה-API שלך. לחץ על כפתור המפתח (🔑) למעלה כדי לחבר אותו מחדש.";
     } else {
         yield "אופס! המוח שלי קפא לשנייה. 🧊 אתה יכול לנסות לשאול שוב?";
     }
@@ -138,11 +138,10 @@ export const generateImage = async (prompt: string): Promise<string | undefined>
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   try {
     const response = await ai.models.generateContent({
-      // Using pro model for better image quality as requested for specific themes (e.g. WWII)
       model: 'gemini-3-pro-image-preview',
       contents: {
         parts: [
-          { text: `Educational school presentation illustration. Realistic and historic/accurate style if related to history. Theme: ${prompt}. No text in image.` }
+          { text: `Educational school presentation illustration. Clear, high quality, professional digital art style. Topic: ${prompt}. No text in image.` }
         ]
       },
       config: {
