@@ -9,12 +9,15 @@ const ApiKeySelectionScreen: React.FC<ApiKeySelectionScreenProps> = ({ onKeySele
   const handleOpenSelectKey = async () => {
     try {
       // @ts-ignore
-      await window.aistudio.openSelectKey();
-      // Per instructions: assume success and proceed to mitigate race conditions
-      onKeySelected();
+      if (window.aistudio && typeof window.aistudio.openSelectKey === 'function') {
+        // @ts-ignore
+        await window.aistudio.openSelectKey();
+        onKeySelected();
+      } else {
+        console.error("AI Studio environment not detected");
+      }
     } catch (error) {
       console.error("Failed to open key selection:", error);
-      alert("לא הצלחנו לפתוח את חלון בחירת המפתח. נסה שוב.");
     }
   };
 
@@ -49,7 +52,7 @@ const ApiKeySelectionScreen: React.FC<ApiKeySelectionScreenProps> = ({ onKeySele
               <Zap className="w-5 h-5" />
               <span>מהיר ופשוט</span>
             </div>
-            <p className="text-sm text-slate-500">לחיצה אחת והכל מחובר. ניתן להוציא מפתח בחינם (או בתשלום לפי שימוש).</p>
+            <p className="text-sm text-slate-500">לחיצה אחת והכל מחובר. ניתן להוציא מפתח בחינם.</p>
           </div>
         </div>
 
@@ -58,9 +61,9 @@ const ApiKeySelectionScreen: React.FC<ApiKeySelectionScreenProps> = ({ onKeySele
             onClick={handleOpenSelectKey}
             className="w-full py-4 bg-primary text-white rounded-xl font-bold shadow-lg hover:bg-indigo-600 transition-all flex items-center justify-center gap-2 text-xl"
           >
-            חיבור מפתח API עכשיו
+            חיבור מפתח API אוטומטי
           </button>
-
+          
           <a 
             href="https://ai.google.dev/gemini-api/docs/billing" 
             target="_blank" 
@@ -68,12 +71,12 @@ const ApiKeySelectionScreen: React.FC<ApiKeySelectionScreenProps> = ({ onKeySele
             className="w-full py-3 border-2 border-slate-200 text-slate-600 rounded-xl font-medium hover:bg-slate-50 transition-all flex items-center justify-center gap-2"
           >
             <ExternalLink className="w-4 h-4" />
-            איך מוציאים מפתח API? (מדריך Billing)
+            איך מוציאים מפתח API?
           </a>
         </div>
 
         <div className="mt-8 p-4 bg-blue-50 rounded-xl text-sm text-blue-700">
-          <strong>הסבר קצר:</strong> מפתח API הוא כמו "תעודת זהות" שמאפשרת לאפליקציה לדבר עם המוח של ה-AI (גוגל ג'מיני). כדי להוציא אחד, נכנסים ל-Google AI Studio, פותחים פרויקט ומפעילים Billing (תשלום).
+          <strong>הסבר קצר:</strong> מפתח API הוא כמו "תעודת זהות" שמאפשרת לאפליקציה לדבר עם המוח של ה-AI (גוגל ג'מיני). כדי להוציא אחד, נכנסים ל-Google AI Studio.
         </div>
       </div>
     </div>

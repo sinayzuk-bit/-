@@ -81,22 +81,18 @@ export default function App() {
         setCurrentUser(savedUser);
       }
 
-      // Check for selected API key using platform method
+      // Check 1: Is key in process.env (Vercel env vars)?
+      if (process.env.API_KEY && process.env.API_KEY !== 'undefined') {
+        setHasApiKey(true);
+        return;
+      }
+
+      // Check 2: Platform specific (Google IDX)
       // @ts-ignore
       if (window.aistudio && typeof window.aistudio.hasSelectedApiKey === 'function') {
         // @ts-ignore
         const selected = await window.aistudio.hasSelectedApiKey();
         setHasApiKey(selected);
-      } else {
-        // If we're on a platform that doesn't support aistudio methods (like direct Vercel),
-        // we check if process.env.API_KEY is already there (set in Vercel secrets)
-        if (process.env.API_KEY && process.env.API_KEY !== 'undefined') {
-          setHasApiKey(true);
-        } else {
-          // If no key in env and no aistudio, we'll still show the key selection screen
-          // so the user can use the openSelectKey dialog if available.
-          setHasApiKey(false);
-        }
       }
     };
     checkStatus();
@@ -111,6 +107,10 @@ export default function App() {
 
   const handleKeySelected = () => {
     setHasApiKey(true);
+  };
+
+  const handleResetKey = () => {
+    setHasApiKey(false);
   };
 
   // 1. Auth Screen (If not logged in)
@@ -226,7 +226,7 @@ export default function App() {
         {/* Settings/Key Button & Logout */}
         <div className="absolute top-4 left-4 flex gap-2">
             <button 
-               onClick={() => setHasApiKey(false)}
+               onClick={handleResetKey}
                className="p-2 text-slate-400 hover:text-amber-500 hover:bg-amber-50 rounded-full transition-all"
                title="החלף מפתח API"
             >

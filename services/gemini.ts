@@ -63,8 +63,13 @@ export const streamChatResponse = async function* (
   subject: Subject,
   mode: StudyMode
 ) {
-  // CRITICAL: Always create a fresh instance of GoogleGenAI inside the function to use latest process.env.API_KEY
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const apiKey = process.env.API_KEY;
+  if (!apiKey) {
+      yield "לא נמצא מפתח API. אנא וודא שהתחברת לחשבון הגוגל שלך.";
+      return;
+  }
+
+  const ai = new GoogleGenAI({ apiKey });
   const modelId = 'gemini-3-pro-preview';
 
   try {
@@ -97,7 +102,10 @@ export const streamChatResponse = async function* (
 };
 
 export const generatePresentationContent = async (topic: string, subject: Subject): Promise<Slide[]> => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const apiKey = process.env.API_KEY;
+  if (!apiKey) throw new Error("API Key missing");
+
+  const ai = new GoogleGenAI({ apiKey });
   
   try {
     const response = await ai.models.generateContent({
@@ -135,7 +143,10 @@ export const generatePresentationContent = async (topic: string, subject: Subjec
 };
 
 export const generateImage = async (prompt: string): Promise<string | undefined> => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const apiKey = process.env.API_KEY;
+  if (!apiKey) return undefined;
+
+  const ai = new GoogleGenAI({ apiKey });
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-3-pro-image-preview',
